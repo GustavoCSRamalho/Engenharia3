@@ -12,8 +12,10 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.BaseResponse;
 import com.pengrad.telegrambot.response.GetUpdatesResponse;
 import com.pengrad.telegrambot.response.SendResponse;
-import controller.ControllerSearchSudent;
-import controller.ControllerSearchTeacher;
+//import controller.ControllerSearchSudent;
+//import controller.ControllerSearchTeacher;
+import controller.dao.ControllerDAO;
+import interfaces.InterfaceDAO;
 import interfaces.InterfaceSearch;
 import interfaces.Observer;
 import model.Model;
@@ -21,7 +23,7 @@ import model.Model;
 public class View implements Observer {
 
 	
-	TelegramBot bot = TelegramBotAdapter.build("407669081:AAFx0JbsAqjGTLVE9OoavEy-y5WRbimG4pc");
+	TelegramBot bot = TelegramBotAdapter.build("407669081:AAGdqgQ8_yA3nudOLBt6pw_kdI5flOWgpfE");
 
 	//Object that receives messages
 	GetUpdatesResponse updatesResponse;
@@ -29,11 +31,15 @@ public class View implements Observer {
 	SendResponse sendResponse;
 	//Object that manage chat actions like "typing action"
 	BaseResponse baseResponse;
+	
+	Boolean ok = false;
 			
 	
 	int queuesIndex=0;
 	
 	InterfaceSearch controllerSearch; //Strategy Pattern -- connection View -> Controller
+	
+	InterfaceDAO controllerDAO;
 	
 	boolean searchBehaviour = false;
 	
@@ -43,13 +49,17 @@ public class View implements Observer {
 		this.model = model; 
 	}
 	
-	public void setControllerSearch(InterfaceSearch controllerSearch){ //Strategy Pattern
-		this.controllerSearch = controllerSearch;
+//	public void setControllerSearch(InterfaceSearch controllerSearch){ //Strategy Pattern
+//		this.controllerSearch = controllerSearch;
+//	}
+	
+	public void setControllerDAO(InterfaceDAO controllerDAO){ //Strategy Pattern
+		this.controllerDAO = controllerDAO;
 	}
 	
 	public void receiveUsersMessages() {
 
-		
+//		List<Update> updates = updatesResponse.updates();
 		
 		//infinity loop
 		while (true){
@@ -67,20 +77,31 @@ public class View implements Observer {
 				queuesIndex = update.updateId()+1;
 				
 				if(this.searchBehaviour==true){
+					sendTypingMessage(update);
 					this.callController(update);
+					ok = false;
 					
-				}else if(update.message().text().equals("student")){
-					setControllerSearch(new ControllerSearchSudent(model, this));
-					sendResponse = bot.execute(new SendMessage(update.message().chat().id(),"what's the student name?"));
+				}else if((update.message() != null || (!update.message().equals(""))) && ok){
+					setControllerDAO(new ControllerDAO(model, this));
 					this.searchBehaviour = true;
-					
-				} else if(update.message().text().equals("teacher")){
-					setControllerSearch(new ControllerSearchTeacher(model, this));
-					sendResponse = bot.execute(new SendMessage(update.message().chat().id(),"what's the teacher name?"));
-					this.searchBehaviour = true;
-					
-				} else {
-					sendResponse = bot.execute(new SendMessage(update.message().chat().id(),"Type teacher or student"));
+
+				}
+				
+//				else if(update.message().text().equals("student")){
+//					setControllerSearch(new ControllerSearchSudent(model, this));
+//					sendResponse = bot.execute(new SendMessage(update.message().chat().id(),"what's the student name?"));
+//					this.searchBehaviour = true;
+//					
+//				} else if(update.message().text().equals("teacher")){
+//					setControllerSearch(new ControllerSearchTeacher(model, this));
+//					sendResponse = bot.execute(new SendMessage(update.message().chat().id(),"what's the teacher name?"));
+//					this.searchBehaviour = true;
+//					
+//				} 
+ {
+//					sendResponse = bot.execute(new SendMessage(update.message().chat().id(),"Type teacher or student"));
+					sendResponse = bot.execute(new SendMessage(update.message().chat().id(),"Digite o nome do filme : "));
+					ok = true;
 				}
 				
 				
@@ -93,8 +114,12 @@ public class View implements Observer {
 	}
 	
 	
-	public void callController(Update update){
-		this.controllerSearch.search(update);
+//	public void callController(Update update){
+//		this.controllerSearch.search(update);
+//	}
+	
+	public void callController(Update update) {
+		this.controllerDAO.send(update);
 	}
 	
 	public void update(long chatId, String studentsData){

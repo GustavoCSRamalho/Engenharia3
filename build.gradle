@@ -53,6 +53,8 @@ dependencies {
 
 	// https://mvnrepository.com/artifact/org.deeplearning4j/deeplearning4j-nlp
 	compile group: 'org.deeplearning4j', name: 'deeplearning4j-nlp', version: '0.8.0'
+	
+	compile files("lib/db4o-8.0.249.16098-all-java5.jar")
 
 	// https://mvnrepository.com/artifact/org.nd4j/nd4j-native-platform
 	testCompile group: 'org.nd4j', name: 'nd4j-native-platform', version: '0.9.1'

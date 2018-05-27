@@ -1,6 +1,7 @@
 package controller.DP;
 
 import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -11,7 +12,6 @@ import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreproc
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +68,7 @@ public class ParagraphVectorsClassifierExample implements InterfacePVC{
 //		 * documents
 //		 */
 //	}
-	@Override
+
 	public void makeParagraphVectors() throws Exception {
 		ClassPathResource resource = new ClassPathResource("paravec/labeled");
 
@@ -80,14 +80,13 @@ public class ParagraphVectorsClassifierExample implements InterfacePVC{
 
 		// ParagraphVectors training configuration
 		paragraphVectors = new ParagraphVectors.Builder().learningRate(0.025).minLearningRate(0.001).batchSize(1000)
-				.epochs(20).iterate(iterator).trainWordVectors(true).tokenizerFactory(tokenizerFactory).build();
+				.epochs(10).iterate(iterator).trainWordVectors(true).tokenizerFactory(tokenizerFactory).build();
 
 		// Start model training
 		paragraphVectors.fit();
 	}
 
-	@Override
-	 public void checkUnlabeledData() throws FileNotFoundException {
+	 public List<Pair<String, Double>> checkUnlabeledData() throws FileNotFoundException {
 		/*
 		 * At this point we assume that we have model built and we can check which
 		 * categories our unlabeled document falls into. So we'll start loading our
@@ -106,11 +105,11 @@ public class ParagraphVectorsClassifierExample implements InterfacePVC{
 				tokenizerFactory);
 		LabelSeeker seeker = new LabelSeeker(iterator.getLabelsSource().getLabels(),
 				(InMemoryLookupTable<VocabWord>) paragraphVectors.getLookupTable());
-
+		List<Pair<String, Double>> scores = null;
 		while (unClassifiedIterator.hasNextDocument()) {
 	         LabelledDocument document = unClassifiedIterator.nextDocument();
 	         INDArray documentAsCentroid = meansBuilder.documentAsVector(document);
-	         List<Pair<String, Double>> scores = seeker.getScores(documentAsCentroid);
+	         scores = seeker.getScores(documentAsCentroid);
 
 	         /*
 	          please note, document.getLabel() is used just to show which document we're looking at now,
@@ -123,10 +122,10 @@ public class ParagraphVectorsClassifierExample implements InterfacePVC{
 	             log.info("        " + score.getFirst() + ": " + score.getSecond());
 	         }
 	     }
+		return scores;
 
 	}
-	 
-	@Override
+	
 	public String conteudo() {
 		return "Arquivo : "+this.textoEscolhido[0][0] + "\nPrecisao : "+this.textoEscolhido[0][1];
 	}
