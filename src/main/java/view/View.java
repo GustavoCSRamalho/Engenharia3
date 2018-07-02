@@ -22,114 +22,104 @@ import model.Model;
 
 public class View implements Observer {
 
-	
 	TelegramBot bot = TelegramBotAdapter.build("407669081:AAGdqgQ8_yA3nudOLBt6pw_kdI5flOWgpfE");
 
-	//Object that receives messages
+	// Object that receives messages
 	GetUpdatesResponse updatesResponse;
-	//Object that send responses
+	// Object that send responses
 	SendResponse sendResponse;
-	//Object that manage chat actions like "typing action"
+	// Object that manage chat actions like "typing action"
 	BaseResponse baseResponse;
-	
+
 	Boolean ok = false;
-			
-	
-	int queuesIndex=0;
-	
-	InterfaceSearch controllerSearch; //Strategy Pattern -- connection View -> Controller
-	
+
+	int queuesIndex = 0;
+
+	InterfaceSearch controllerSearch; // Strategy Pattern -- connection View -> Controller
+
 	InterfaceDAO controllerDAO;
-	
+
 	boolean searchBehaviour = false;
-	
+
 	private Model model;
-	
-	public View(Model model){
-		this.model = model; 
+
+	public View(Model model) {
+
+		this.model = model;
+		try {
+			updatesResponse = bot.execute(new GetUpdates().limit(100).offset(queuesIndex).timeout(0));
+		} catch (Exception e) {
+			System.out.println("\n!!!EERO NO updateResponse fora do while(true)!!!\n" + e.getMessage());
+
+		}
+
+		List<Update> updates = updatesResponse.updates();
+
+		for (Update update : updates) {
+			queuesIndex += update.updateId();
+		}
 	}
-	
-//	public void setControllerSearch(InterfaceSearch controllerSearch){ //Strategy Pattern
-//		this.controllerSearch = controllerSearch;
-//	}
-	
-	public void setControllerDAO(InterfaceDAO controllerDAO){ //Strategy Pattern
+
+	// public void setControllerSearch(InterfaceSearch controllerSearch){ //Strategy
+	// Pattern
+	// this.controllerSearch = controllerSearch;
+	// }
+
+	public void setControllerDAO(InterfaceDAO controllerDAO) { // Strategy Pattern
 		this.controllerDAO = controllerDAO;
 	}
-	
+
 	public void receiveUsersMessages() {
 
-//		List<Update> updates = updatesResponse.updates();
-		
-		//infinity loop
-		while (true){
-		
-			//taking the Queue of Messages
-			updatesResponse =  bot.execute(new GetUpdates().limit(100).offset(queuesIndex));
-			
-			//Queue of messages
-			List<Update> updates = updatesResponse.updates();
+		// infinity loop
+		while (true) {
 
-			//taking each message in the Queue
+			// taking the Queue of Messages
+			try {
+				updatesResponse = bot.execute(new GetUpdates().limit(100).offset(queuesIndex).timeout(0));
+			} catch (Exception e) {
+				System.out.println("\n!!!ERRO NO updateResponse dentro do while(true)!!!\n" + e.getMessage());
+				continue;
+			}
+			// Queue of messages
+			List<Update> updates = updatesResponse.updates();
+//			bot.execute(new SendMessage(update.message().chat().id(), "Digite o nome do filme : "));
+
+			// taking each message in the Queue
 			for (Update update : updates) {
-				
-				//updating queue's index
-				queuesIndex = update.updateId()+1;
-				
-				if(this.searchBehaviour==true){
+
+				// updating queue's index
+				queuesIndex = update.updateId() + 1;
+
+				if ((update.message() != null || (!update.message().equals(""))) && ok) {
+					setControllerDAO(new ControllerDAO(model, this));
+					this.searchBehaviour = true;
 					sendTypingMessage(update);
 					this.callController(update);
 					ok = false;
-					
-				}else if((update.message() != null || (!update.message().equals(""))) && ok){
-					setControllerDAO(new ControllerDAO(model, this));
-					this.searchBehaviour = true;
-
 				}
 				
-//				else if(update.message().text().equals("student")){
-//					setControllerSearch(new ControllerSearchSudent(model, this));
-//					sendResponse = bot.execute(new SendMessage(update.message().chat().id(),"what's the student name?"));
-//					this.searchBehaviour = true;
-//					
-//				} else if(update.message().text().equals("teacher")){
-//					setControllerSearch(new ControllerSearchTeacher(model, this));
-//					sendResponse = bot.execute(new SendMessage(update.message().chat().id(),"what's the teacher name?"));
-//					this.searchBehaviour = true;
-//					
-//				} 
- {
-//					sendResponse = bot.execute(new SendMessage(update.message().chat().id(),"Type teacher or student"));
-					sendResponse = bot.execute(new SendMessage(update.message().chat().id(),"Digite o nome do filme : "));
+					sendResponse = bot
+							.execute(new SendMessage(update.message().chat().id(), "Digite o nome do filme : "));
 					ok = true;
-				}
 				
-				
-				
+
 			}
 
 		}
-		
-		
+
 	}
-	
-	
-//	public void callController(Update update){
-//		this.controllerSearch.search(update);
-//	}
-	
+
 	public void callController(Update update) {
 		this.controllerDAO.send(update);
 	}
-	
-	public void update(long chatId, String studentsData){
+
+	public void update(long chatId, String studentsData) {
 		sendResponse = bot.execute(new SendMessage(chatId, studentsData));
 		this.searchBehaviour = false;
 	}
-	
-	public void sendTypingMessage(Update update){
+
+	public void sendTypingMessage(Update update) {
 		baseResponse = bot.execute(new SendChatAction(update.message().chat().id(), ChatAction.typing.name()));
 	}
-	
-
 }
